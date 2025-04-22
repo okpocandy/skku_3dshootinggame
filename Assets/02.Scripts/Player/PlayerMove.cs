@@ -38,10 +38,17 @@ public class PlayerMove : MonoBehaviour
 
     private bool _isClimbing = false;
     private Vector3 _climbNormal;
+    private float _climbRayDistance = 1.5f;  // 레이캐스트 거리
+    private float _climbCheckInterval = 0.1f; // 레이캐스트 체크 간격
+    private float _lastClimbCheckTime = 0f;   // 마지막 레이캐스트 체크 시간
 
     private void Awake()
     {
         _characterController = GetComponent<CharacterController>();
+    }
+
+    private void Start()
+    {
         _currentSpeed = _playerData.MoveSpeed;
         _currentStamina = _playerData.MaxStamina;
     }
@@ -56,7 +63,7 @@ public class PlayerMove : MonoBehaviour
         Climb(moveDirection);
         
         // 스태미나 회복 - 실제 움직임이 없을 때만 회복
-        if(moveDirection.magnitude < 0.1f)  // 움직임이 거의 없을 때
+        if(moveDirection.magnitude <= 0f)  // 움직임이 거의 없을 때
         {
             _currentStamina += _playerData.AddStamina * Time.deltaTime;
             UIManager.Instance.UpdateStamina(_currentStamina, _playerData.MaxStamina);
@@ -163,36 +170,63 @@ public class PlayerMove : MonoBehaviour
 
     private void Climb(Vector3 moveDirection)
     {
-        if (_characterController.collisionFlags == CollisionFlags.Sides)
+        // 일정 간격으로 레이캐스트 체크
+        if (Time.time - _lastClimbCheckTime >= _climbCheckInterval)
         {
-            PlayerState = PlayerStates.Climb;
-            _isClimbing = true;
-            _yVelocity = 0f;
-
-            _currentStamina -= _playerData.SubStamina * 2 * Time.deltaTime;
-            if(_currentStamina <= 5)
+            _lastClimbCheckTime = Time.time;
+            
+            // 전방 레이캐스트
+            RaycastHit hit;
+            if (Physics.Raycast(transform.position, transform.forward, out hit, _climbRayDistance))
             {
+                // 벽에 닿았을 때
+                if (hit.collider.CompareTag("Climbable") && !_isClimbing)
+                {
+                    // 스태미나가 5 이하면 벽타기 불가
+                    if (_currentStamina <= 5)
+                    {
+                        return;
+                    }
+
+                    _isClimbing = true;
+                    _climbNormal = hit.normal;
+                    PlayerState = PlayerStates.Climb;
+                }
+            }
+            else if (_isClimbing)
+            {
+                // 벽에서 떨어졌을 때
+                _isClimbing = false;
                 PlayerState = PlayerStates.Idle;
             }
+        }
+
+        // 벽타기 중일 때
+        if (_isClimbing)
+        {
+            // 스태미나 소모
+            _currentStamina -= _playerData.SubStamina * 2 * Time.deltaTime;
             UIManager.Instance.UpdateStamina(_currentStamina, _playerData.MaxStamina);
 
-            if (Input.GetKey(KeyCode.W))
+            // 스태미나가 5 이하면 벽타기 중지
+            if (_currentStamina <= 5)
+            {
+                _isClimbing = false;
+                PlayerState = PlayerStates.Idle;
+                return;
+            }
+
+            _yVelocity = 0f;  // 기본적으로 수직 속도는 0
+
+            // 이동 입력에 따른 수직 이동
+            if (moveDirection.z > 0)
             {
                 _yVelocity = _playerData.ClimbSpeed;
             }
-            else if (Input.GetKey(KeyCode.S))
+            else if (moveDirection.z < 0)
             {
                 _yVelocity = -_playerData.ClimbSpeed;
             }
-            else
-            {
-                _yVelocity = 0f;
-            }
-        }
-        else if (_isClimbing)
-        {
-            _isClimbing = false;
-            PlayerState = PlayerStates.Idle;
         }
     }
 }
