@@ -10,7 +10,7 @@ public class PlayerSO : ScriptableObject
 
     public float MaxStamina = 100f;
     public float AddStamina = 20f;
-    public float SubStamina = 10f;
+    public float SubStamina = 15f;
     public float MinRunStamina = 0.5f;
 
     public float SlidingStamina = 25f;

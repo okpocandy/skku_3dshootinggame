@@ -18,7 +18,7 @@ MonoBehaviour:
   SlideSpeed: 20
   MaxStamina: 100
   AddStamina: 20
-  SubStamina: 10
+  SubStamina: 15
   MinRunStamina: 0.5
   SlidingStamina: 25
   SlideTime: 0.3

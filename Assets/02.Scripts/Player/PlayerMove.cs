@@ -56,9 +56,7 @@ public class PlayerMove : MonoBehaviour
         Climb(moveDirection);
         
         // 스태미나 회복 - 실제 움직임이 없을 때만 회복
-        if(!Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.E) && 
-           PlayerState != PlayerStates.Climb && _characterController.isGrounded &&
-           moveDirection.magnitude < 0.1f)  // 움직임이 거의 없을 때
+        if(moveDirection.magnitude < 0.1f)  // 움직임이 거의 없을 때
         {
             _currentStamina += _playerData.AddStamina * Time.deltaTime;
             UIManager.Instance.UpdateStamina(_currentStamina, _playerData.MaxStamina);

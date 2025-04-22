@@ -1201,7 +1201,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 10.2, z: 20}
-  m_LocalScale: {x: 7, y: 29.66, z: 7}
+  m_LocalScale: {x: 7, y: 143.99, z: 7}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -1464,11 +1464,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe0200d66e18d3644a85a1b922eac96a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _playerData: {fileID: 0}
   PlayerState: 0
-  MoveSpeed: 7
-  RunSpeed: 12
-  JumpPower: 5
-  SlideSpeed: 20
   _currentSpeed: 7
   _currentStamina: 100
 --- !u!143 &1794094107
