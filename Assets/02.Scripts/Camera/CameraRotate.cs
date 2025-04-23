@@ -7,7 +7,16 @@ public class CameraRotate : MonoBehaviour
     // 카메라 각도는 0도에서부터 시작한다고 기준을 세운다.
     private float _rotationX = 0f;
     private float _rotationY = 0f;
+    
+    // 반동 효과
+    [SerializeField]
+    private float _recoilIntensity = 1f;
 
+    private void Start()
+    {
+        Gun gun = FindObjectOfType<Gun>();
+        gun.OnFire += Recoil;
+    }
 
     // 카메라 회전 스크립트
     // 목표: 마우스를 조작하면 카메라를 그 방향으로 회전시키고 싶다.
@@ -25,7 +34,10 @@ public class CameraRotate : MonoBehaviour
 
         // 3.  회전 방향으로 회전시킨다.
         transform.eulerAngles = new Vector3(_rotationY, _rotationX, 0);
-        
-        
+    }
+
+    private void Recoil()
+    {
+        _rotationY -= _recoilIntensity;
     }
 }
