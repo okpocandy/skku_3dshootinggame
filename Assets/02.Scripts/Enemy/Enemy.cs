@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Enemy : MonoBehaviour
 {
@@ -36,6 +37,7 @@ public class Enemy : MonoBehaviour
 
     private GameObject _player;
     private CharacterController _characterController;
+    private NavMeshAgent _agent;
 
     private Vector3 _startPosition;
     [SerializeField]
@@ -48,6 +50,9 @@ public class Enemy : MonoBehaviour
         _characterController = GetComponent<CharacterController>();
         _startPosition = transform.position;
         _attackTimer = AttackCoolTime;
+
+        _agent = GetComponent<NavMeshAgent>();
+        _agent.speed = MoveSpeed;
     }
 
     private void Update()
@@ -87,7 +92,8 @@ public class Enemy : MonoBehaviour
 
         // 넉백
         Vector3 knockbackDirection = (transform.position - _player.transform.position).normalized;
-        _characterController.Move(knockbackDirection * damage.From.GetComponent<Gun>().KnockbackForce);
+        //_characterController.Move(knockbackDirection * damage.From.GetComponent<Gun>().KnockbackForce);
+        _agent.Move(knockbackDirection * damage.From.GetComponent<Gun>().KnockbackForce);
 
         if(Health <= 0)
         {
@@ -144,9 +150,8 @@ public class Enemy : MonoBehaviour
 
         // 행동: 플레이어를 추적한다.
         Vector3 direction = (_player.transform.position - transform.position).normalized;
-        _characterController.Move(direction * MoveSpeed * Time.deltaTime);
-        
-
+        //_characterController.Move(direction * MoveSpeed * Time.deltaTime);
+        _agent.SetDestination(_player.transform.position);
     }
 
     private void Return()
@@ -169,7 +174,8 @@ public class Enemy : MonoBehaviour
 
         // 행동: 시작 위치로 돌아간다.
         Vector3 direction = (_startPosition - transform.position).normalized;
-        _characterController.Move(direction * MoveSpeed * Time.deltaTime);
+        //_characterController.Move(direction * MoveSpeed * Time.deltaTime);
+        _agent.SetDestination(_startPosition);
     }
 
     private void Attack()
@@ -194,9 +200,14 @@ public class Enemy : MonoBehaviour
 
     private IEnumerator Damaged_Coroutine()
     {
+        _agent.isStopped = true;
+        _agent.ResetPath();
+
         yield return new WaitForSeconds(DamagedTime);
+
         Debug.Log("상태전환: Damaged -> Trace");
         CurrentState = EnemyState.Trace;
+        _agent.isStopped = false;
     }
 
     private IEnumerator Die_Coroutine()
@@ -213,8 +224,9 @@ public class Enemy : MonoBehaviour
             CurrentState = EnemyState.Trace;
             return;
         }
-        Vector3 direction = (_patrolPoints[_patrolIndex].position - transform.position).normalized;
-        _characterController.Move(direction * MoveSpeed * Time.deltaTime);
+        // Vector3 direction = (_patrolPoints[_patrolIndex].position - transform.position).normalized;
+        //_characterController.Move(direction * MoveSpeed * Time.deltaTime);
+        _agent.SetDestination(_patrolPoints[_patrolIndex].position);
         if(Vector3.Distance(transform.position, _patrolPoints[_patrolIndex].position) <= 0.1f)
         {
             _patrolIndex++;

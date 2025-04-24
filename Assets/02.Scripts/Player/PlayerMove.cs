@@ -20,7 +20,6 @@ public class PlayerMove : MonoBehaviour
     private float _currentSpeed;
     private const float GRAVITY = -9.81f;   // 중력가속도
     private float _yVelocity = 0f;  // 중력 변수
-    
     // 스테미나
     [SerializeField]
     private float _currentStamina;
@@ -35,6 +34,7 @@ public class PlayerMove : MonoBehaviour
     private float _v = 0f;
 
     private CharacterController _characterController;
+    private CameraFollow _cameraFollow;
 
     private bool _isClimbing = false;
     private Vector3 _climbNormal;
@@ -51,6 +51,7 @@ public class PlayerMove : MonoBehaviour
     {
         _currentSpeed = _playerData.MoveSpeed;
         _currentStamina = _playerData.MaxStamina;
+        _cameraFollow = Camera.main.GetComponent<CameraFollow>();
     }
 
     private void Update() 
@@ -80,9 +81,41 @@ public class PlayerMove : MonoBehaviour
         _h = Input.GetAxisRaw("Horizontal");
         _v = Input.GetAxisRaw("Vertical");
 
-        Vector3 dir = new Vector3(_h, 0, _v).normalized;
-        // 메인 카메라를 기준으로 방향을 변환한다.
-        return Camera.main.transform.TransformDirection(dir);
+        if (_cameraFollow == null) return Vector3.zero;
+
+        Vector3 moveDirection = Vector3.zero;
+
+        switch (_cameraFollow.CurrentCameraMode)
+        {
+            case CameraMode.FirstPerson:
+                // 1인칭: 카메라 기준으로 이동
+                Vector3 forward = Camera.main.transform.forward;
+                Vector3 right = Camera.main.transform.right;
+                forward.y = 0;
+                right.y = 0;
+                forward.Normalize();
+                right.Normalize();
+                moveDirection = forward * _v + right * _h;
+                break;
+
+            case CameraMode.ThirdPerson:
+                // 3인칭: 카메라 기준으로 이동
+                Vector3 cameraForward = Camera.main.transform.forward;
+                Vector3 cameraRight = Camera.main.transform.right;
+                cameraForward.y = 0;
+                cameraRight.y = 0;
+                cameraForward.Normalize();
+                cameraRight.Normalize();
+                moveDirection = cameraForward * _v + cameraRight * _h;
+                break;
+
+            case CameraMode.TopDown:
+                // 탑다운: 월드 좌표계 기준으로 이동
+                moveDirection = new Vector3(_h, 0, _v).normalized;
+                break;
+        }
+
+        return moveDirection;
     }
     
     private void Jump()

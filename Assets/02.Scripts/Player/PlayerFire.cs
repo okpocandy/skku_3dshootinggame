@@ -18,7 +18,7 @@ public class PlayerFire : MonoBehaviour
 
     private Camera _mainCamera;
     private Gun _gun;
-
+    private CameraFollow _cameraFollow;
     private void Start() 
     {
         _mainCamera = Camera.main;
@@ -26,6 +26,8 @@ public class PlayerFire : MonoBehaviour
         _currentThrowPower = MinThrowPower;
         _currentBombCount = MaxBombCount;
         UIManager.Instance.UpdateBombCount(_currentBombCount, MaxBombCount);
+
+        _cameraFollow = Camera.main.GetComponent<CameraFollow>();
 
         Cursor.lockState = CursorLockMode.Locked;
     }
@@ -57,8 +59,12 @@ public class PlayerFire : MonoBehaviour
                 }
                 bomb.transform.position = FirePosition.transform.position;
 
+                Vector3 fireDirection = _cameraFollow.CurrentCameraMode == CameraMode.FirstPerson 
+                    ? Camera.main.transform.forward  // FPS: 카메라 방향
+                    : transform.forward;            // TPS: 플레이어 캐릭터 방향
+
                 Rigidbody bombRigidbody = bomb.GetComponent<Rigidbody>();
-                bombRigidbody.AddForce(_mainCamera.transform.forward * _currentThrowPower, ForceMode.Impulse);
+                bombRigidbody.AddForce(fireDirection * _currentThrowPower, ForceMode.Impulse);
                 bombRigidbody.AddTorque(Vector3.one);
 
                 _currentThrowPower = MinThrowPower;

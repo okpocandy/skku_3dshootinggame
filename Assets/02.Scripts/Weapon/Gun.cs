@@ -31,6 +31,8 @@ public class Gun : MonoBehaviour
 
     public Action OnFire;
 
+    private CameraFollow _cameraFollow;
+
     private void Awake()
     {
         _bulletLineRenderer = GetComponent<LineRenderer>();
@@ -43,6 +45,7 @@ public class Gun : MonoBehaviour
     {
         _mainCamera = Camera.main;
         _currentBulletCount = MaxBulletCount;
+        _cameraFollow = FindObjectOfType<CameraFollow>();
     }
 
     // Update is called once per frame
@@ -63,11 +66,38 @@ public class Gun : MonoBehaviour
             _fireTimer = 0f;
             _currentBulletCount--;
             UIManager.Instance.UpdateBulletCount(_currentBulletCount, MaxBulletCount);
-            CameraShake.Instance.ShakeCamera(Camera.main.transform.position);
-            OnFire?.Invoke();
+
+            // 카메라 모드에 따른 발사 방향 설정
+            Vector3 fireDirection;
+            if (_cameraFollow.CurrentCameraMode == CameraMode.FirstPerson)
+            {
+                // 1인칭: 카메라 방향으로 발사
+                fireDirection = _mainCamera.transform.forward;
+            }
+            else if (_cameraFollow.CurrentCameraMode == CameraMode.ThirdPerson)
+            {
+                // 3인칭: 플레이어 방향으로 발사
+                fireDirection = transform.forward;
+            }
+            else // TopDown
+            {
+                // 탑다운: 마우스 커서 위치로 발사
+                Ray mouseRay = _mainCamera.ScreenPointToRay(Input.mousePosition);
+                Plane groundPlane = new Plane(Vector3.up, transform.position);
+                float rayDistance;
+                if (groundPlane.Raycast(mouseRay, out rayDistance))
+                {
+                    Vector3 targetPoint = mouseRay.GetPoint(rayDistance);
+                    fireDirection = (targetPoint - transform.position).normalized;
+                }
+                else
+                {
+                    fireDirection = transform.forward;
+                }
+            }
 
             // 레이저 생성
-            Ray ray = new Ray(FirePosition.transform.position, _mainCamera.transform.forward);
+            Ray ray = new Ray(FirePosition.transform.position, fireDirection);
             RaycastHit hitInfo = new RaycastHit();
 
             bool isHit = Physics.Raycast(ray, out hitInfo);
@@ -100,7 +130,7 @@ public class Gun : MonoBehaviour
                 if (trailRenderer != null)
                 {
                     trailRenderer.transform.position = FirePosition.transform.position;
-                    StartCoroutine(SpawnTrail(trailRenderer, FirePosition.transform.position + _mainCamera.transform.forward * _maxDistance));
+                    StartCoroutine(SpawnTrail(trailRenderer, FirePosition.transform.position + fireDirection * _maxDistance));
                 }
             }
         }
