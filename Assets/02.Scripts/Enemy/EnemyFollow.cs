@@ -22,7 +22,6 @@ public class EnemyFollow : Enemy
                 Attack();
                 break;
             case EnemyState.Damaged:
-                // Damaged 상태일 때는 base 클래스의 Damaged_Coroutine이 실행되도록 함
                 break;
             case EnemyState.Die:
                 break;

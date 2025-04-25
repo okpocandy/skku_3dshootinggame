@@ -48,7 +48,7 @@ public class Gun : MonoBehaviour
     {
         _mainCamera = Camera.main;
         _currentBulletCount = MaxBulletCount;
-        _cameraFollow = FindObjectOfType<CameraFollow>();
+        _cameraFollow = FindAnyObjectByType<CameraFollow>();
     }
 
     void Update()
@@ -80,6 +80,12 @@ public class Gun : MonoBehaviour
                         damageable.TakeDamage(new Damage { Value = Damage, KnockbackForce = KnockbackForce, From = this.gameObject });
                     }
 
+                    if(BulletEffect != null)
+                    {
+                        BulletEffect.transform.position = hit.point;
+                        BulletEffect.Play();
+                    }
+                    
                     StartCoroutine(TraceBullet(hit.point));
                     StartCoroutine(MoveTrail(hit.point));
                 }

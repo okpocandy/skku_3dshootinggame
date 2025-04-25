@@ -12,6 +12,7 @@ public class Barrel : MonoBehaviour, IDamageable
     public float ExplosionForce = 20f;
     public float DestroyTime = 10f;
     public LayerMask ExplosionLayer;
+    public GameObject ExplosionEffectPrefab;
 
     private Rigidbody _rigidbody;
     private Collider[] _colliders = new Collider[32]; // Pre-allocate array
@@ -55,11 +56,15 @@ public class Barrel : MonoBehaviour, IDamageable
     private void Explode()
     {
         _isExploding = true;
+        if(ExplosionEffectPrefab != null)
+        {
+            Instantiate(ExplosionEffectPrefab, transform.position, Quaternion.identity);
+        }
         Collider[] hits = Physics.OverlapSphere(transform.position, ExplosionRadius);
         
         foreach(Collider hit in hits)
         {
-            if (hit.TryGetComponent(out IDamageable damageable))
+            if (hit.TryGetComponent<IDamageable>(out IDamageable damageable))
             {
                 damageable.TakeDamage(new Damage { Value = ExplosionDamage, KnockbackForce = ExplosionKnockbackForce, From = this.gameObject});
             }
