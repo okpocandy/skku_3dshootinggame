@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,7 +25,8 @@ public class Enemy : MonoBehaviour, IDamageable
     public float MoveSpeed = 3.3f;       // 적 이동 속도
     public float AttackDistance = 2.5f;  // 적 공격 인식 범위
     public float AttackCoolTime  = 2f;   // 적 공격 쿨타임
-    public int Health = 100;
+    public float Health;
+    public float MaxHealth = 100f;
     public float DamagedTime = 0.5f;     // 피격 효과 지속 시간
     public float DieTime = 2f;
     public float PatrolTime = 5f;         // 패트롤 시간
@@ -43,13 +45,14 @@ public class Enemy : MonoBehaviour, IDamageable
     [SerializeField]
     private List<Transform> _patrolPoints = new List<Transform>();
 
-
+    public Action OnDamaged;
     protected virtual void Start()
     {
         _player = GameObject.FindGameObjectWithTag("Player");
         _characterController = GetComponent<CharacterController>();
         _attackTimer = AttackCoolTime;
-
+        Health = MaxHealth;
+        
         _agent = GetComponent<NavMeshAgent>();
         _agent.speed = MoveSpeed;
     }
@@ -88,6 +91,9 @@ public class Enemy : MonoBehaviour, IDamageable
         }
 
         Health -= damage.Value;
+        
+        // 피격 이벤트
+        OnDamaged?.Invoke();
 
         // 넉백
         Vector3 knockbackDirection = (transform.position - damage.From.transform.position).normalized;

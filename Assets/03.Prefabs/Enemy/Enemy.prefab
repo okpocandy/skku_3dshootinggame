@@ -123,6 +123,7 @@ GameObject:
   - component: {fileID: 1117594745709067446}
   - component: {fileID: 1397423670313144211}
   - component: {fileID: 130934096027928093}
+  - component: {fileID: 2192696193221944550}
   m_Layer: 7
   m_Name: Enemy
   m_TagString: Enemy
@@ -267,6 +268,7 @@ MonoBehaviour:
   AttackDistance: 2
   AttackCoolTime: 2
   Health: 100
+  MaxHealth: 100
   DamagedTime: 0.5
   DieTime: 2
   PatrolTime: 5
@@ -297,6 +299,22 @@ NavMeshAgent:
   m_BaseOffset: 1
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &2192696193221944550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5526503947701451391}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98eef6fda90ea10418a1d948061d7fed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  UIEnemyHealthSliderPrefab: {fileID: 4864680169373969339, guid: 438eadf3482a1d1489971431cfc84047, type: 3}
+  WorldSpaceCanvas: {fileID: 0}
+  TargetEnemy: {fileID: 0}
+  Offset: {x: 0, y: 1.5, z: 0}
 --- !u!1 &7837063674076945855
 GameObject:
   m_ObjectHideFlags: 0
