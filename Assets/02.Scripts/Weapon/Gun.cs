@@ -8,6 +8,7 @@ public class Gun : MonoBehaviour
     public ParticleSystem BulletEffect;
     public int MaxBulletCount = 50;
     public float KnockbackForce = 1f;
+    public int Damage = 10;
     [SerializeField]
     private int _currentBulletCount = 0;
     public float FireRate = 0.1f;
@@ -22,12 +23,15 @@ public class Gun : MonoBehaviour
     public GameObject FirePosition;
 
     private LineRenderer _bulletLineRenderer;
+    private Vector3[] _linePositions = new Vector3[2];
+    private Vector3 _startPosition;
+    private Vector3 _endPosition;
+    private float _trailTime;
 
     [SerializeField]
     private TrailRenderer _bulletTrailRenderer;
     [SerializeField]
     private float _maxDistance = 10f;
-    private TrailRenderer _bulletTrailRenderer2;
 
     public Action OnFire;
 
@@ -36,11 +40,10 @@ public class Gun : MonoBehaviour
     private void Awake()
     {
         _bulletLineRenderer = GetComponent<LineRenderer>();
-        // 사용할 점을 두개로 변경
         _bulletLineRenderer.positionCount = 2;
         _bulletLineRenderer.enabled = false;
     }
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
     void Start()
     {
         _mainCamera = Camera.main;
@@ -48,7 +51,6 @@ public class Gun : MonoBehaviour
         _cameraFollow = FindObjectOfType<CameraFollow>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         GunFire();
@@ -57,106 +59,67 @@ public class Gun : MonoBehaviour
 
     private void GunFire()
     {
+        if (_isReloading) return;
+
         _fireTimer += Time.deltaTime;
-        if (Input.GetMouseButton(0))
+        if (_fireTimer >= FireRate)
         {
-            if(_fireTimer < FireRate || _currentBulletCount <= 0)
-                return;
+            if (Input.GetMouseButton(0) && _currentBulletCount > 0)
+            {
+                _fireTimer = 0f;
+                _currentBulletCount--;
+                UIManager.Instance.UpdateBulletCount(_currentBulletCount, MaxBulletCount);
 
-            _fireTimer = 0f;
-            _currentBulletCount--;
-            UIManager.Instance.UpdateBulletCount(_currentBulletCount, MaxBulletCount);
+                Ray ray = _mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+                RaycastHit hit;
 
-            // 카메라 모드에 따른 발사 방향 설정
-            Vector3 fireDirection;
-            if (_cameraFollow.CurrentCameraMode == CameraMode.FirstPerson)
-            {
-                // 1인칭: 카메라 방향으로 발사
-                fireDirection = _mainCamera.transform.forward;
-            }
-            else if (_cameraFollow.CurrentCameraMode == CameraMode.ThirdPerson)
-            {
-                // 3인칭: 플레이어 방향으로 발사
-                fireDirection = transform.forward;
-            }
-            else // TopDown
-            {
-                // 탑다운: 마우스 커서 위치로 발사
-                Ray mouseRay = _mainCamera.ScreenPointToRay(Input.mousePosition);
-                Plane groundPlane = new Plane(Vector3.up, transform.position);
-                float rayDistance;
-                if (groundPlane.Raycast(mouseRay, out rayDistance))
+                if (Physics.Raycast(ray, out hit, _maxDistance))
                 {
-                    Vector3 targetPoint = mouseRay.GetPoint(rayDistance);
-                    fireDirection = (targetPoint - transform.position).normalized;
+                    if (hit.collider.TryGetComponent(out IDamageable damageable))
+                    {
+                        damageable.TakeDamage(new Damage { Value = Damage, KnockbackForce = KnockbackForce, From = this.gameObject });
+                    }
+
+                    StartCoroutine(TraceBullet(hit.point));
+                    StartCoroutine(MoveTrail(hit.point));
                 }
                 else
                 {
-                    fireDirection = transform.forward;
+                    Vector3 targetPoint = ray.GetPoint(_maxDistance);
+                    StartCoroutine(TraceBullet(targetPoint));
+                    StartCoroutine(MoveTrail(targetPoint));
                 }
-            }
 
-            // 레이저 생성
-            Ray ray = new Ray(FirePosition.transform.position, fireDirection);
-            RaycastHit hitInfo = new RaycastHit();
-
-            bool isHit = Physics.Raycast(ray, out hitInfo);
-            // 피격
-            
-            if(isHit)
-            {
-                BulletEffect.transform.position = hitInfo.point;
-                BulletEffect.transform.forward = hitInfo.normal;
-                BulletEffect.Play();
-                TrailRenderer trailRenderer = TrailPool.Instance.GetTrail();
-                if (trailRenderer != null)
-                {
-                    trailRenderer.transform.position = FirePosition.transform.position;
-                    StartCoroutine(SpawnTrail(trailRenderer, hitInfo.point));
-                }
-                // 적이 맞았을 때때
-                if(hitInfo.collider.gameObject.CompareTag("Enemy"))
-                {
-                    Enemy enemy = hitInfo.collider.GetComponent<Enemy>();
-                    if(enemy != null)
-                    {
-                        enemy.TakeDamage(new Damage{Value = 10, From = this.gameObject});
-                    }
-                }
-            }
-            else
-            {
-                TrailRenderer trailRenderer = TrailPool.Instance.GetTrail();
-                if (trailRenderer != null)
-                {
-                    trailRenderer.transform.position = FirePosition.transform.position;
-                    StartCoroutine(SpawnTrail(trailRenderer, FirePosition.transform.position + fireDirection * _maxDistance));
-                }
+                OnFire?.Invoke();
             }
         }
     }
 
-    private IEnumerator SpawnTrail(TrailRenderer trailRenderer, Vector3 position)
+    private IEnumerator MoveTrail(Vector3 position)
     {
-        float time = 0;
-        Vector3 startPosition = trailRenderer.transform.position;
+        TrailRenderer trailRenderer = TrailPool.Instance.GetObject();
+        if (trailRenderer == null) yield break;
 
-        while(time < 1)
+        trailRenderer.transform.position = FirePosition.transform.position;
+        _startPosition = trailRenderer.transform.position;
+        _endPosition = position;
+        _trailTime = 0f;
+
+        while (_trailTime < 1f)
         {
-            trailRenderer.transform.position = Vector3.Lerp(startPosition, position, time);
-            time += Time.deltaTime / trailRenderer.time;
-
+            _trailTime += Time.deltaTime / trailRenderer.time;
+            trailRenderer.transform.position = Vector3.Lerp(_startPosition, _endPosition, _trailTime);
             yield return null;
         }
 
-        // Trail이 목적지에 도달하면 풀로 반환
-        TrailPool.Instance.ReturnTrail(trailRenderer);
+        TrailPool.Instance.ReturnObject(trailRenderer);
     }
 
     private IEnumerator TraceBullet(Vector3 position)
     {
-        _bulletLineRenderer.SetPosition(0, FirePosition.transform.position);
-        _bulletLineRenderer.SetPosition(1, position);
+        _linePositions[0] = FirePosition.transform.position;
+        _linePositions[1] = position;
+        _bulletLineRenderer.SetPositions(_linePositions);
         _bulletLineRenderer.enabled = true;
 
         yield return new WaitForSeconds(0.05f);
@@ -166,11 +129,12 @@ public class Gun : MonoBehaviour
 
     private void ReloadGun()
     {
-        if(_isReloading)
+        if (_isReloading)
         {
             _reloadTimer += Time.deltaTime;
             UIManager.Instance.UpdateReloadingSlider(_reloadTimer, ReloadTime);
-            if(Input.GetMouseButton(0))
+            
+            if (Input.GetMouseButton(0))
             {
                 Debug.Log("재장전 실패");
                 UIManager.Instance.DeactivateReloading();
@@ -178,7 +142,8 @@ public class Gun : MonoBehaviour
                 _isReloading = false;
                 return;
             }
-            if(_reloadTimer >= ReloadTime)
+            
+            if (_reloadTimer >= ReloadTime)
             {
                 _currentBulletCount = MaxBulletCount;
                 _isReloading = false;
@@ -189,7 +154,7 @@ public class Gun : MonoBehaviour
         }
         else
         {
-            if(Input.GetKeyDown(KeyCode.R) || _currentBulletCount <= 0)
+            if (Input.GetKeyDown(KeyCode.R) || _currentBulletCount <= 0)
             {
                 _isReloading = true;
                 _reloadTimer = 0f;

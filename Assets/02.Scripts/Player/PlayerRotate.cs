@@ -3,6 +3,8 @@ using UnityEngine;
 public class PlayerRotate : MonoBehaviour
 {
     public float RotationSpeed = 150f;
+    public float MaxVerticalAngle = 80f;
+    public float MinVerticalAngle = -80f;
     private CameraFollow _cameraFollow;
 
     private float _rotationX = 0;
@@ -26,7 +28,7 @@ public class PlayerRotate : MonoBehaviour
 
                 _rotationX += mouseX * RotationSpeed * Time.deltaTime;
                 _rotationY -= mouseY * RotationSpeed * Time.deltaTime;
-                _rotationY = Mathf.Clamp(_rotationY, -90f, 90f);
+                _rotationY = Mathf.Clamp(_rotationY, MinVerticalAngle, MaxVerticalAngle);
 
                 transform.eulerAngles = new Vector3(_rotationY, _rotationX, 0);
                 break;

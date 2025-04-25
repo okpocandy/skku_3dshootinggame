@@ -1,11 +1,11 @@
 using UnityEngine;
 
 public enum CameraMode
-{
-    FirstPerson,
-    ThirdPerson,
-    TopDown,
-}
+    {
+        FirstPerson,
+        ThirdPerson,
+        TopDown,
+    }
 
 public class CameraFollow : MonoBehaviour
 {

@@ -35,6 +35,14 @@ public class PlayerFire : MonoBehaviour
     private void Update()
     {
         Bomb();
+        if(Input.GetKey(KeyCode.LeftAlt))
+        {
+            Cursor.lockState = CursorLockMode.None;
+        }
+        else if(Input.GetKeyUp(KeyCode.LeftAlt))
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+        }
     }
 
     private void Bomb()

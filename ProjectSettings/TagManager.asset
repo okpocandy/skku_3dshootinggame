@@ -14,9 +14,9 @@ TagManager:
   - Water
   - UI
   - Bomb
-  - 
-  - 
-  - 
+  - Enemy
+  - Minimap
+  - Damageable
   - 
   - 
   - 

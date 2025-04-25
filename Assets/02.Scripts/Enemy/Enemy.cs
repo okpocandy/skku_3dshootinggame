@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class Enemy : MonoBehaviour
+public class Enemy : MonoBehaviour, IDamageable
 {
     // 0: 대기 1: 추적 2: 복귀 3: 공격 4: 피격 5: 사망 6: 순찰
     public enum EnemyState
@@ -39,16 +39,15 @@ public class Enemy : MonoBehaviour
     private CharacterController _characterController;
     private NavMeshAgent _agent;
 
-    private Vector3 _startPosition;
+    public Vector3 _startPosition;
     [SerializeField]
     private List<Transform> _patrolPoints = new List<Transform>();
 
 
-    private void Start()
+    protected virtual void Start()
     {
         _player = GameObject.FindGameObjectWithTag("Player");
         _characterController = GetComponent<CharacterController>();
-        _startPosition = transform.position;
         _attackTimer = AttackCoolTime;
 
         _agent = GetComponent<NavMeshAgent>();
@@ -91,9 +90,9 @@ public class Enemy : MonoBehaviour
         Health -= damage.Value;
 
         // 넉백
-        Vector3 knockbackDirection = (transform.position - _player.transform.position).normalized;
+        Vector3 knockbackDirection = (transform.position - damage.From.transform.position).normalized;
         //_characterController.Move(knockbackDirection * damage.From.GetComponent<Gun>().KnockbackForce);
-        _agent.Move(knockbackDirection * damage.From.GetComponent<Gun>().KnockbackForce);
+        _agent.Move(knockbackDirection * damage.KnockbackForce);
 
         if(Health <= 0)
         {
@@ -110,7 +109,7 @@ public class Enemy : MonoBehaviour
     }
 
     // 상태와 똑같은 이름으로 메서드를 만들어준다.
-    private void Idle()
+    protected virtual void Idle()
     {
         // 전이 조건: 플레이어와 가까워 지면 -> 추적
         if(Vector3.Distance(transform.position, _player.transform.position) < FindDistance)
@@ -131,7 +130,7 @@ public class Enemy : MonoBehaviour
         // 행동: 가만히 있는다.
 
     }
-    private void Trace()
+    protected virtual void Trace()
     {
         // 전이 조건: 플에이어와 멀어지면 -> Return
         if(Vector3.Distance(transform.position, _player.transform.position) >= ReturnDistance)
@@ -154,7 +153,7 @@ public class Enemy : MonoBehaviour
         _agent.SetDestination(_player.transform.position);
     }
 
-    private void Return()
+    protected virtual void Return()
     {
         // 전이 조건: 시작 위치와 가까워 지면 -> Idle
         if(Vector3.Distance(transform.position, _startPosition) <= 0.1f)
@@ -178,7 +177,7 @@ public class Enemy : MonoBehaviour
         _agent.SetDestination(_startPosition);
     }
 
-    private void Attack()
+    protected virtual void Attack()
     {
         // 전이 조건: 공격 범위 보다 멀어지면 -> Trace
         if(Vector3.Distance(transform.position, _player.transform.position) >= AttackDistance)
@@ -198,7 +197,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    private IEnumerator Damaged_Coroutine()
+    protected virtual IEnumerator Damaged_Coroutine()
     {
         _agent.isStopped = true;
         _agent.ResetPath();
@@ -210,13 +209,13 @@ public class Enemy : MonoBehaviour
         _agent.isStopped = false;
     }
 
-    private IEnumerator Die_Coroutine()
+    protected virtual IEnumerator Die_Coroutine()
     {
         yield return new WaitForSeconds(DieTime);
         gameObject.SetActive(false);
     }
 
-    private void Patrol()
+    protected virtual void Patrol()
     {
         if(Vector3.Distance(transform.position, _player.transform.position) <= FindDistance)
         {
