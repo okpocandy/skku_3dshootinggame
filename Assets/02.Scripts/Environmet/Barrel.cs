@@ -60,6 +60,7 @@ public class Barrel : MonoBehaviour, IDamageable
         {
             Instantiate(ExplosionEffectPrefab, transform.position, Quaternion.identity);
         }
+        
         Collider[] hits = Physics.OverlapSphere(transform.position, ExplosionRadius);
         
         foreach(Collider hit in hits)

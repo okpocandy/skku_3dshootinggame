@@ -6,6 +6,8 @@ public class UIManager : Singleton<UIManager>
 {
     // 스테미나
     public Slider StaminaSlider;
+    // 체력
+    public Slider HealthSlider;
     // 폭탄 개수
     public TextMeshProUGUI BombCountText;
     // 총알 개수
@@ -14,6 +16,18 @@ public class UIManager : Singleton<UIManager>
     public TextMeshProUGUI ReloadingText;
     // 재장전 슬라이더
     public Slider ReloadingSlider;
+
+    public Player Player;
+
+    private void Start()
+    {
+        Player.OnPlayerDamaged += UpdateHealth;
+    }
+
+    public void UpdateHealth()
+    {
+        HealthSlider.value = Player.CurrentHealth / Player.MaxHealth;
+    }
 
     public void UpdateStamina(float currentStamina, float maxStamina)
     {
