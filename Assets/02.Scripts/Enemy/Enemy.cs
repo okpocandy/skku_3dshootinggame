@@ -23,6 +23,7 @@ public class Enemy : MonoBehaviour, IDamageable
     public float FindDistance = 7f;      // 적 발견 범위
     public float ReturnDistance = 10f;   // 적 복귀 범위
     public float MoveSpeed = 3.3f;       // 적 이동 속도
+    public float AttackDamage = 10f;     // 적 공격 데미지
     public float AttackDistance = 2.5f;  // 적 공격 인식 범위
     public float AttackCoolTime  = 2f;   // 적 공격 쿨타임
     public float Health;
@@ -37,24 +38,30 @@ public class Enemy : MonoBehaviour, IDamageable
 
     private int _patrolIndex = 0;
 
+    [SerializeField]
     private GameObject _player;
     private CharacterController _characterController;
     private NavMeshAgent _agent;
+    protected Animator _animator;
 
     public Vector3 _startPosition;
     [SerializeField]
     private List<Transform> _patrolPoints = new List<Transform>();
 
     public Action OnDamaged;
+    public Action OnDie;
     protected virtual void Start()
     {
-        _player = GameObject.FindGameObjectWithTag("Player");
-        _characterController = GetComponent<CharacterController>();
+        
         _attackTimer = AttackCoolTime;
         Health = MaxHealth;
-        
+
+        _player = GameObject.FindGameObjectWithTag("Player");
+        _characterController = GetComponent<CharacterController>();
+        _animator = GetComponentInChildren<Animator>();
         _agent = GetComponent<NavMeshAgent>();
         _agent.speed = MoveSpeed;
+
     }
 
     private void Update()
@@ -97,18 +104,27 @@ public class Enemy : MonoBehaviour, IDamageable
 
         // 넉백
         Vector3 knockbackDirection = (transform.position - damage.From.transform.position).normalized;
-        //_characterController.Move(knockbackDirection * damage.From.GetComponent<Gun>().KnockbackForce);
+        Debug.Log(damage.KnockbackForce, damage.From);
+        Debug.Log(knockbackDirection);
+        knockbackDirection.y = 0;
+        Debug.Log(knockbackDirection);
+        //_characterController.Move(knockbackDirection * damage.KnockbackForce);
         _agent.Move(knockbackDirection * damage.KnockbackForce);
 
         if(Health <= 0)
         {
             Debug.Log($"상태전환: {CurrentState} -> Die");
+            OnDie?.Invoke();
+            ItemSpawner.Instance.SpawnGold(transform.position);
+            
             CurrentState = EnemyState.Die;
+            _animator.SetTrigger("Die");
             StartCoroutine(Die_Coroutine());
             return;
         }
 
         Debug.Log($"상태전환: {CurrentState} -> Damaged");
+        _animator.SetTrigger("Hit");
 
         CurrentState = EnemyState.Damaged;
         StartCoroutine(Damaged_Coroutine());
@@ -122,6 +138,9 @@ public class Enemy : MonoBehaviour, IDamageable
         {
             Debug.Log("상태전환: Idle -> Trace");
             CurrentState = EnemyState.Trace;
+
+            _animator.SetTrigger("IdleToMove");
+
             return;
         }
 
@@ -130,6 +149,8 @@ public class Enemy : MonoBehaviour, IDamageable
         {
             Debug.Log("상태전환: Idle -> Patrol");
             CurrentState = EnemyState.Patrol;
+            _animator.SetTrigger("IdleToMove");
+
             _patrolIndex = 0;
             return;
         }
@@ -150,6 +171,7 @@ public class Enemy : MonoBehaviour, IDamageable
         {
             Debug.Log("상태전환: Trace -> Attack");
             CurrentState = EnemyState.Attack;
+            _animator.SetTrigger("MoveToAttackDelay");
             return;
         }
 
@@ -168,6 +190,9 @@ public class Enemy : MonoBehaviour, IDamageable
             _patrolTimer = 0f;
             transform.position = _startPosition;
             CurrentState = EnemyState.Idle;
+
+            _animator.SetTrigger("MoveToIdle");
+
             return;
         }
         if(Vector3.Distance(transform.position, _player.transform.position) < FindDistance)
@@ -183,12 +208,13 @@ public class Enemy : MonoBehaviour, IDamageable
         _agent.SetDestination(_startPosition);
     }
 
-    protected virtual void Attack()
+    public virtual void Attack()
     {
         // 전이 조건: 공격 범위 보다 멀어지면 -> Trace
         if(Vector3.Distance(transform.position, _player.transform.position) >= AttackDistance)
         {
             Debug.Log("상태전환: Attack -> Trace");
+            _animator.SetTrigger("AttackDelayToMove");
             CurrentState = EnemyState.Trace;
             _attackTimer = AttackCoolTime;
             return;
@@ -199,6 +225,8 @@ public class Enemy : MonoBehaviour, IDamageable
         if(_attackTimer >= AttackCoolTime)
         {
             Debug.Log("플레이어 공격");
+            _animator.SetTrigger("AttackDelayToAttack");
+            _player.GetComponent<Player>().TakeDamage(AttackDamage);
             _attackTimer = 0f;
         }
     }

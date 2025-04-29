@@ -17,11 +17,12 @@ public class CameraFollow : MonoBehaviour
     
     [SerializeField]
     private Transform _target;
-    
+    [SerializeField] private Vector3 _fpsOffset = new Vector3(0, 1.5f, -1.5f);
     [Header("3인칭 카메라 설정")]
     [SerializeField] private float _tpsDistance = 5f; // 카메라와 플레이어 사이의 거리
     [SerializeField] private float _tpsHeight = 2f; // 카메라의 높이
     [SerializeField] private float _smoothSpeed = 10f; // 카메라 이동 부드러움
+    
     
     [Header("탑다운 카메라 설정")]
     [SerializeField] private Vector3 _topDownOffset = new Vector3(0, 10, -5);
@@ -59,7 +60,8 @@ public class CameraFollow : MonoBehaviour
         if (_currentCameraMode == CameraMode.FirstPerson)
         {
             // 1인칭 카메라
-            transform.position = Vector3.SmoothDamp(transform.position, _target.position, ref _currentVelocity, 0.1f);
+            //transform.position = Vector3.SmoothDamp(transform.position, _target.position, ref _currentVelocity, 0.1f);
+            transform.position = _target.position;
         }
         else if (_currentCameraMode == CameraMode.ThirdPerson)
         {

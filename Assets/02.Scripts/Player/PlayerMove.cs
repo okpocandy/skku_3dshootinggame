@@ -13,6 +13,7 @@ public enum PlayerStates
 public class PlayerMove : MonoBehaviour
 {
     [SerializeField] private PlayerSO _playerData;
+    private Player _player;
     
     public PlayerStates PlayerState = PlayerStates.Idle;
 
@@ -20,9 +21,6 @@ public class PlayerMove : MonoBehaviour
     private float _currentSpeed;
     private const float GRAVITY = -9.81f;   // 중력가속도
     private float _yVelocity = 0f;  // 중력 변수
-    // 스테미나
-    [SerializeField]
-    private float _currentStamina;
     
     // 슬라이드
     private float _slideTimer = 0f;
@@ -35,6 +33,7 @@ public class PlayerMove : MonoBehaviour
 
     private CharacterController _characterController;
     private CameraFollow _cameraFollow;
+    private Animator _animator;
 
     private bool _isClimbing = false;
     private Vector3 _climbNormal;
@@ -45,18 +44,20 @@ public class PlayerMove : MonoBehaviour
     private void Awake()
     {
         _characterController = GetComponent<CharacterController>();
+        _player = GetComponent<Player>();
+        _animator = GetComponentInChildren<Animator>();
     }
 
     private void Start()
     {
         _currentSpeed = _playerData.MoveSpeed;
-        _currentStamina = _playerData.MaxStamina;
         _cameraFollow = Camera.main.GetComponent<CameraFollow>();
     }
 
     private void Update() 
     {
         Vector3 moveDirection = GetMoveDirection();
+
         Jump();
         ApplyGravity();
         Run();
@@ -66,20 +67,17 @@ public class PlayerMove : MonoBehaviour
         // 스태미나 회복 - 실제 움직임이 없을 때만 회복
         if(moveDirection.magnitude <= 0f)  // 움직임이 거의 없을 때
         {
-            _currentStamina += _playerData.AddStamina * Time.deltaTime;
-            UIManager.Instance.UpdateStamina(_currentStamina, _playerData.MaxStamina);
+            _player.RecoverStamina(_player.AddStamina * Time.deltaTime);
         }
 
         moveDirection.y = _yVelocity;
-
-        _currentStamina = Mathf.Clamp(_currentStamina, 0f, _playerData.MaxStamina);
         _characterController.Move(moveDirection * _currentSpeed * Time.deltaTime);
     }
     
     private Vector3 GetMoveDirection()
     {
-        _h = Input.GetAxisRaw("Horizontal");
-        _v = Input.GetAxisRaw("Vertical");
+        _h = Input.GetAxis("Horizontal");
+        _v = Input.GetAxis("Vertical");
 
         if (_cameraFollow == null) return Vector3.zero;
 
@@ -88,7 +86,8 @@ public class PlayerMove : MonoBehaviour
         switch (_cameraFollow.CurrentCameraMode)
         {
             case CameraMode.FirstPerson:
-                // 1인칭: 카메라 기준으로 이동
+            case CameraMode.ThirdPerson:
+                // 1인칭과 3인칭 모두 카메라 기준으로 이동
                 Vector3 forward = Camera.main.transform.forward;
                 Vector3 right = Camera.main.transform.right;
                 forward.y = 0;
@@ -96,22 +95,16 @@ public class PlayerMove : MonoBehaviour
                 forward.Normalize();
                 right.Normalize();
                 moveDirection = forward * _v + right * _h;
-                break;
 
-            case CameraMode.ThirdPerson:
-                // 3인칭: 카메라 기준으로 이동
-                Vector3 cameraForward = Camera.main.transform.forward;
-                Vector3 cameraRight = Camera.main.transform.right;
-                cameraForward.y = 0;
-                cameraRight.y = 0;
-                cameraForward.Normalize();
-                cameraRight.Normalize();
-                moveDirection = cameraForward * _v + cameraRight * _h;
+                _animator.SetFloat("MoveAmount", moveDirection.magnitude);
+
                 break;
 
             case CameraMode.TopDown:
                 // 탑다운: 월드 좌표계 기준으로 이동
-                moveDirection = new Vector3(_h, 0, _v).normalized;
+                moveDirection = new Vector3(_h, 0, _v);
+                _animator.SetFloat("MoveAmount", moveDirection.magnitude);
+                moveDirection.Normalize();
                 break;
         }
 
@@ -150,14 +143,13 @@ public class PlayerMove : MonoBehaviour
 
     private void Run()
     {
-        if(_currentStamina > _playerData.MinRunStamina)
+        if(_player.CurrentStamina > _player.MinRunStamina)
         {
             if(Input.GetKey(KeyCode.LeftShift))
             {
                 PlayerState = PlayerStates.Run;
                 _currentSpeed = _playerData.RunSpeed;
-                _currentStamina -= _playerData.SubStamina * Time.deltaTime;
-                UIManager.Instance.UpdateStamina(_currentStamina, _playerData.MaxStamina);
+                _player.UseStamina(_player.SubStamina * Time.deltaTime);
             }
             else if(Input.GetKeyUp(KeyCode.LeftShift))
             {
@@ -189,11 +181,10 @@ public class PlayerMove : MonoBehaviour
         {
             if(Input.GetKeyDown(KeyCode.E) && _characterController.isGrounded)
             {
-                if(_currentStamina > _playerData.SlidingStamina)
+                if(_player.CurrentStamina > _player.SlidingStamina)
                 {
                     _currentSpeed = _playerData.SlideSpeed;
-                    _currentStamina -= _playerData.SlidingStamina;
-                    UIManager.Instance.UpdateStamina(_currentStamina, _playerData.MaxStamina);
+                    _player.UseStamina(_player.SlidingStamina);
                     _isSliding = true;
                     PlayerState = PlayerStates.Slide;
                 }
@@ -216,7 +207,7 @@ public class PlayerMove : MonoBehaviour
                 if (hit.collider.CompareTag("Climbable") && !_isClimbing)
                 {
                     // 스태미나가 5 이하면 벽타기 불가
-                    if (_currentStamina <= 5)
+                    if (_player.CurrentStamina <= 5)
                     {
                         return;
                     }
@@ -238,11 +229,10 @@ public class PlayerMove : MonoBehaviour
         if (_isClimbing)
         {
             // 스태미나 소모
-            _currentStamina -= _playerData.SubStamina * 2 * Time.deltaTime;
-            UIManager.Instance.UpdateStamina(_currentStamina, _playerData.MaxStamina);
+            _player.UseStamina(_player.SubStamina * 2 * Time.deltaTime);
 
             // 스태미나가 5 이하면 벽타기 중지
-            if (_currentStamina <= 5)
+            if (_player.CurrentStamina <= 5)
             {
                 _isClimbing = false;
                 PlayerState = PlayerStates.Idle;

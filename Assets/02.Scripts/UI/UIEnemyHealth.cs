@@ -14,16 +14,25 @@ public class UIEnemyHealth : MonoBehaviour
         TargetEnemy = this.GetComponent<Enemy>();
         _uiEnemyHealthSlider = Instantiate(UIEnemyHealthSliderPrefab, WorldSpaceCanvas.transform).GetComponent<Slider>();
         TargetEnemy.OnDamaged += UpdateHealth;
+        TargetEnemy.OnDie += OnTargetDie;
     }
 
     private void Update()
     {
-        _uiEnemyHealthSlider.transform.position = transform.position + Offset;
+        if(_uiEnemyHealthSlider != null)
+        {
+            _uiEnemyHealthSlider.transform.position = transform.position + Offset;
+        }
     }
 
     public void UpdateHealth()
     {
         _uiEnemyHealthSlider.value = TargetEnemy.Health / TargetEnemy.MaxHealth;
+    }
+
+    private void OnTargetDie()
+    {
+        Destroy(_uiEnemyHealthSlider.gameObject);
     }
 
 

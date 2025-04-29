@@ -16,6 +16,7 @@ public class EnemyFollow : Enemy
         switch(CurrentState)
         {
             case EnemyState.Trace:
+                _animator.SetTrigger("IdleToMove");
                 Trace();
                 break;
             case EnemyState.Attack:
