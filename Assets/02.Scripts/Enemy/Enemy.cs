@@ -39,7 +39,7 @@ public class Enemy : MonoBehaviour, IDamageable
     private int _patrolIndex = 0;
 
     [SerializeField]
-    private GameObject _player;
+    protected GameObject _player;
     private CharacterController _characterController;
     private NavMeshAgent _agent;
     protected Animator _animator;
@@ -52,7 +52,6 @@ public class Enemy : MonoBehaviour, IDamageable
     public Action OnDie;
     protected virtual void Start()
     {
-        
         _attackTimer = AttackCoolTime;
         Health = MaxHealth;
 
@@ -61,7 +60,40 @@ public class Enemy : MonoBehaviour, IDamageable
         _animator = GetComponentInChildren<Animator>();
         _agent = GetComponent<NavMeshAgent>();
         _agent.speed = MoveSpeed;
+    }
 
+    private void OnEnable()
+    {
+        // 상태 초기화
+        CurrentState = EnemyState.Idle;
+        Health = MaxHealth;
+        
+        // 타이머 초기화
+        _attackTimer = AttackCoolTime;
+        _damagedTimer = 0f;
+        _patrolTimer = 0f;
+        
+        // NavMeshAgent 초기화
+        if (_agent != null)
+        {
+            _agent.enabled = true;
+            _agent.isStopped = false;
+            _agent.ResetPath();
+            _agent.speed = MoveSpeed;
+        }
+
+        // 애니메이터 초기화
+        if (_animator != null)
+        {
+            _animator.Play("Idle");
+        }
+    }
+
+    private void OnDisable()
+    {
+
+        // 모든 코루틴 중지
+        StopAllCoroutines();
     }
 
     private void Update()
@@ -246,7 +278,7 @@ public class Enemy : MonoBehaviour, IDamageable
     protected virtual IEnumerator Die_Coroutine()
     {
         yield return new WaitForSeconds(DieTime);
-        gameObject.SetActive(false);
+        EnemyPool.Instance.ReturnObject(this);
     }
 
     protected virtual void Patrol()

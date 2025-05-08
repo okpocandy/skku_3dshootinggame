@@ -20,7 +20,7 @@ public class PlayState : IGameState
     public void Update()
     {
         // TODO: 게임 로직 업데이트
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.O))
         {
             _gameManager.ChangeState(GameState.GameOver);
         }

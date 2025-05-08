@@ -4,6 +4,7 @@ using UnityEngine.AI;
 public class EnemySpawner : MonoBehaviour
 {
     public float SpawnTime = 5f;
+
     public float SpawnRadius = 10f;
 
     private float _spawnTimer = 0f;
@@ -16,6 +17,7 @@ public class EnemySpawner : MonoBehaviour
             return;
         }
         _spawnTimer = 0;
+
 
         Vector3 spawnPosition = transform.position + Random.insideUnitSphere * SpawnRadius;
         spawnPosition.y = 1.2f;

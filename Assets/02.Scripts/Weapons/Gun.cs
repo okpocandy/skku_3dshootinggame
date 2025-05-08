@@ -22,6 +22,8 @@ public class Gun : MonoBehaviour
     private Camera _mainCamera;
     public GameObject FirePosition;
 
+    public GameObject MuzzleFlashParticle;
+
     private LineRenderer _bulletLineRenderer;
     private Vector3[] _linePositions = new Vector3[2];
     private Vector3 _startPosition;
@@ -37,6 +39,8 @@ public class Gun : MonoBehaviour
 
     private CameraFollow _cameraFollow;
     public Animator _animator;
+
+    private bool _isFiring = false;
 
     private void Awake()
     {
@@ -54,7 +58,19 @@ public class Gun : MonoBehaviour
 
     void Update()
     {
-        GunFire();
+        if (Input.GetMouseButton(0) && _currentBulletCount > 0)
+        {
+            _isFiring = true;
+            GunFire();
+        }
+        else
+        {
+            _isFiring = false;
+            if (MuzzleFlashParticle != null)
+            {
+                MuzzleFlashParticle.SetActive(false);
+            }
+        }
         ReloadGun();
     }
 
@@ -68,6 +84,11 @@ public class Gun : MonoBehaviour
             if (Input.GetMouseButton(0) && _currentBulletCount > 0)
             {
                 _animator.SetTrigger("Fire");
+
+                if(MuzzleFlashParticle != null)
+                {
+                    MuzzleFlashParticle.SetActive(true);
+                }
                 
                 _fireTimer = 0f;
                 _currentBulletCount--;

@@ -32,7 +32,7 @@ public class Weapon_Bomb : MonoBehaviour
         UIWeapons.Instance.UpdateBombCount(_currentBombCount, MaxBombCount);
     }
 
-    // Update is called once per frame
+
     void Update()
     {
         if(Input.GetMouseButton(0))

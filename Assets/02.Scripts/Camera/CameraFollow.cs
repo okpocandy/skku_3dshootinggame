@@ -9,9 +9,6 @@ public enum CameraMode
 
 public class CameraFollow : MonoBehaviour
 {
-    
-    
-
     public Transform FPSTarget;
     public Transform TPSTarget;
     
@@ -32,11 +29,20 @@ public class CameraFollow : MonoBehaviour
     private GameObject _player;
     public CameraMode CurrentCameraMode => _currentCameraMode;
 
+    private Vector3 _lastTargetPosition;
+    private Vector3 _lookAheadPos;
+    private bool _isShaking = false;
+    private float _shakeIntensity = 0.2f;
+    private float _shakeDuration = 0.3f;
+    private float _shakeTimer = 0f;
+    private Vector3 _shakeOffset;
+
     private void Start()
     {
         _target = FPSTarget;
         _player = GameObject.FindGameObjectWithTag("Player");
         _currentCameraMode = CameraMode.FirstPerson;
+        _lastTargetPosition = _target.position;
     }
     
     private void LateUpdate()
@@ -57,11 +63,12 @@ public class CameraFollow : MonoBehaviour
             _target = _player.transform;
         }
         
+        Vector3 targetPosition = transform.position;
+        
         if (_currentCameraMode == CameraMode.FirstPerson)
         {
             // 1인칭 카메라
-            //transform.position = Vector3.SmoothDamp(transform.position, _target.position, ref _currentVelocity, 0.1f);
-            transform.position = _target.position;
+            targetPosition = _target.position;
         }
         else if (_currentCameraMode == CameraMode.ThirdPerson)
         {
@@ -70,13 +77,41 @@ public class CameraFollow : MonoBehaviour
             Vector3 desiredPosition = _target.position - _target.forward * _tpsDistance + Vector3.up * _tpsHeight;
             
             // 부드러운 카메라 이동
-            transform.position = Vector3.SmoothDamp(transform.position, desiredPosition, ref _currentVelocity, 1f / _smoothSpeed);
+            targetPosition = Vector3.SmoothDamp(transform.position, desiredPosition, ref _currentVelocity, 1f / _smoothSpeed);
         }
         else if (_currentCameraMode == CameraMode.TopDown)
         {
             // 탑다운 카메라
             Vector3 desiredPosition = _target.position + _topDownOffset;
-            transform.position = Vector3.SmoothDamp(transform.position, desiredPosition, ref _currentVelocity, 0.1f);
+            targetPosition = Vector3.SmoothDamp(transform.position, desiredPosition, ref _currentVelocity, 0.1f);
         }
+
+        // 쉐이크 효과 적용
+        if (_isShaking)
+        {
+            _shakeTimer -= Time.deltaTime;
+            if (_shakeTimer <= 0)
+            {
+                _isShaking = false;
+            }
+            else
+            {
+                targetPosition += new Vector3(
+                    Random.Range(-1f, 1f) * _shakeIntensity,
+                    Random.Range(-1f, 1f) * _shakeIntensity,
+                    0
+                );
+            }
+        }
+
+        transform.position = targetPosition;
+    }
+
+    public void ShakeCamera(float intensity = 0.2f, float duration = 0.3f)
+    {
+        _isShaking = true;
+        _shakeIntensity = intensity;
+        _shakeDuration = duration;
+        _shakeTimer = duration;
     }
 }
