@@ -55,4 +55,9 @@ public class PopupManager : Singleton<PopupManager>
             }
         }
     }
+
+    public void OnClickCloseButton()
+    {
+        ClosePopup();
+    }
 } 
