@@ -62,7 +62,7 @@ public class PlayerMove : MonoBehaviour
         ApplyGravity();
         Run();
         Slide();
-        Climb(moveDirection);
+        //Climb(moveDirection);
         
         // 스태미나 회복 - 실제 움직임이 없을 때만 회복
         if(moveDirection.magnitude <= 0f)  // 움직임이 거의 없을 때

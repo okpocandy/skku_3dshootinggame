@@ -73,12 +73,12 @@ public class Barrel : MonoBehaviour, IDamageable
         
         Destroy(gameObject, DestroyTime);
     }
-
+    /*
     void OnDestroy()
     {
         if (MapBake.Instance != null)
         {
             MapBake.Instance.Bake();
         }
-    }
+    }*/
 }

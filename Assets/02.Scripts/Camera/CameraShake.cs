@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class CameraShake : Singleton<CameraShake>
+public class CameraShake : MonoBehaviour
 {
     public float ShakeIntensity = 0.2f;
     public float ShakeDuration = 0.3f;
